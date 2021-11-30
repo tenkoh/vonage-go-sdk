@@ -123,6 +123,9 @@ func (c *Client) setSignatureMethod() {
 }
 
 func (c *Client) loadExternalPrivateKey() error {
+	if c.privateKey == "" {
+		return nil
+	}
 	if strings.Contains(c.privateKey, "\n") {
 		return ErrInvalidPrivateKey
 	}
@@ -153,6 +156,10 @@ func (c *Client) setStringLiterals() {
 	c.headers["User-Agent"] = ua
 }
 
+// NewClient returns a pointer of vonage-client.
+// Required options varies due to usage. Check README.
+// An example:
+// client, err := NewClient(Key("YOUR_KEY"), Secret("YOUR_SECRET"))
 func NewClient(options ...Option) (*Client, error) {
 	c := new(Client)
 	for _, option := range options {
