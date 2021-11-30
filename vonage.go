@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 )
 
@@ -37,13 +38,7 @@ type Client struct {
 	host                string
 	apiHost             string
 	headers             map[string]string
-	auth                *Authenticator
-}
-type Authenticator struct {
-	ApplicationID string
-	Iat           func() int
-	Exp           func() int
-	Jti           func() string
+	auth                map[string]interface{}
 }
 
 type Option func(*Client)
@@ -183,6 +178,7 @@ func NewClient(options ...Option) (*Client, error) {
 	}
 	// prevent nil pointer
 	c.headers = map[string]string{}
+	c.auth = map[string]interface{}{}
 
 	if err := c.loadExternalPrivateKey(); err != nil {
 		return nil, err
@@ -193,26 +189,7 @@ func NewClient(options ...Option) (*Client, error) {
 	c.setEnvValues()
 	c.setSignatureMethod()
 	c.setStringLiterals()
-
-	auth := NewAuthenticator()
-	auth.ApplicationID = c.applicationID
-	c.auth = auth
 	return c, nil
-}
-
-func NewAuthenticator() *Authenticator {
-	auth := new(Authenticator)
-	auth.Iat = func() int {
-		return int(time.Now().Unix())
-	}
-	auth.Exp = func() int {
-		return int(time.Now().Unix() + AUTH_EXP_DURATION)
-	}
-	auth.Jti = func() string {
-		u := new(uuid.UUID)
-		return u.String()
-	}
-	return auth
 }
 
 func (c *Client) SetHost(host string) error {
@@ -241,6 +218,27 @@ func (c *Client) GetApiHost() string {
 	return c.apiHost
 }
 
-func (c *Client) Auth(auth *Authenticator) {
+func (c *Client) Auth(auth map[string]interface{}) {
 	c.auth = auth
+}
+
+// [FIXME] this implementation is ambiguous
+func (c *Client) generateApplicationJwt() (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["application_id"] = c.applicationID
+	claims["iat"] = int(time.Now().Unix())
+	claims["exp"] = int(time.Now().Unix() + AUTH_EXP_DURATION)
+	claims["jti"] = func() string {
+		u := new(uuid.UUID)
+		return u.String()
+	}
+	for k, v := range c.auth {
+		claims[k] = v
+	}
+	tokenString, err := token.SignedString(c.privateKey)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
 }
