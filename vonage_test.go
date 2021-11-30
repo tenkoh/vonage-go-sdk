@@ -27,8 +27,8 @@ func TestNewClient(t *testing.T) {
 				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got.key, tt.wantKey) {
-				t.Errorf("NewClient() = %v, want %v", got.key, tt.wantKey)
+			if !reflect.DeepEqual(got.apiKey, tt.wantKey) {
+				t.Errorf("NewClient() = %v, want %v", got.apiKey, tt.wantKey)
 			}
 		})
 	}
