@@ -6,14 +6,19 @@ import (
 	"hash"
 	"io"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
-	HOST         = "rest.nexmo.com"
-	API_HOST     = "api.nexmo.com"
-	HOST_PATTERN = `^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$`
+	AUTH_EXP_DURATION = 60
+	HOST              = "rest.nexmo.com"
+	API_HOST          = "api.nexmo.com"
+	HOST_PATTERN      = `^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$`
 )
 
 var version = "0.1.0"
@@ -32,6 +37,13 @@ type Client struct {
 	host                string
 	apiHost             string
 	headers             map[string]string
+	auth                *Authenticator
+}
+type Authenticator struct {
+	ApplicationID string
+	Iat           func() int
+	Exp           func() int
+	Jti           func() string
 }
 
 type Option func(*Client)
@@ -66,6 +78,7 @@ func ApplicationID(id string) Option {
 	}
 }
 
+// [FIXME] []byte input is required?
 func PrivateKey(pk interface{}) Option {
 	switch pk := pk.(type) {
 	case string:
@@ -142,10 +155,13 @@ func (c *Client) loadExternalPrivateKey() error {
 	return nil
 }
 
-func (c *Client) setConstants() {
+func (c *Client) setConstants() error {
 	c.hostPattern = HOST_PATTERN
-	c.host = HOST
+	if err := c.SetHost(HOST); err != nil {
+		return err
+	}
 	c.apiHost = API_HOST
+	return nil
 }
 
 func (c *Client) setStringLiterals() {
@@ -168,14 +184,63 @@ func NewClient(options ...Option) (*Client, error) {
 	// prevent nil pointer
 	c.headers = map[string]string{}
 
-	// if nil option passed, set a ENV value.
 	if err := c.loadExternalPrivateKey(); err != nil {
+		return nil, err
+	}
+	if err := c.setConstants(); err != nil {
 		return nil, err
 	}
 	c.setEnvValues()
 	c.setSignatureMethod()
-	c.setConstants()
 	c.setStringLiterals()
 
+	auth := NewAuthenticator()
+	auth.ApplicationID = c.applicationID
+	c.auth = auth
 	return c, nil
+}
+
+func NewAuthenticator() *Authenticator {
+	auth := new(Authenticator)
+	auth.Iat = func() int {
+		return int(time.Now().Unix())
+	}
+	auth.Exp = func() int {
+		return int(time.Now().Unix() + AUTH_EXP_DURATION)
+	}
+	auth.Jti = func() string {
+		u := new(uuid.UUID)
+		return u.String()
+	}
+	return auth
+}
+
+func (c *Client) SetHost(host string) error {
+	reg := regexp.MustCompile(c.hostPattern)
+	if !reg.MatchString(host) {
+		return ErrInvalidHostName
+	}
+	c.host = host
+	return nil
+}
+
+func (c *Client) GetHost() string {
+	return c.host
+}
+
+func (c *Client) SetApiHost(host string) error {
+	reg := regexp.MustCompile(c.hostPattern)
+	if !reg.MatchString(host) {
+		return ErrInvalidHostName
+	}
+	c.apiHost = host
+	return nil
+}
+
+func (c *Client) GetApiHost() string {
+	return c.apiHost
+}
+
+func (c *Client) Auth(auth *Authenticator) {
+	c.auth = auth
 }
