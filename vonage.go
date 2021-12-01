@@ -2,7 +2,11 @@ package vonage
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path"
+	"runtime"
 )
 
 const (
@@ -16,6 +20,7 @@ const (
 type VonageClient struct {
 	apiKey    string
 	apiSecret string
+	userAgent string
 }
 
 type Option func(*VonageClient)
@@ -38,11 +43,23 @@ func NewClient(options ...Option) (*VonageClient, error) {
 	if err := validateAuthParameters(client.apiKey, client.apiSecret); err != nil {
 		return nil, fmt.Errorf("fail to create a new client; %w", err)
 	}
+	client.SetUserAgent()
 	return client, nil
 }
 
 func (vc *VonageClient) GenerateVerifyClient() *VerifyClient {
 	return nil
+}
+
+func (vc *VonageClient) MakeAuthRequest(method, host, endpoint string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, path.Join(host, endpoint), body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", vc.userAgent)
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(vc.apiKey, vc.apiSecret)
+	return req, nil
 }
 
 func (vc *VonageClient) GetApiKey() string {
@@ -77,6 +94,16 @@ func (vc *VonageClient) SetEnvApiSecret() {
 	vc.apiSecret = secret
 }
 
+func (vc *VonageClient) SetUserAgent() {
+	ua := fmt.Sprintf("vonage-go/%s go/%s", SDK_VERSION, runtime.Version())
+	vc.userAgent = ua
+}
+
+func (vc *VonageClient) GetUserAgent() string {
+	return vc.userAgent
+}
+
+// Constructor methods
 func ApiKey(key string) Option {
 	return func(vc *VonageClient) {
 		vc.SetApiKey(key)

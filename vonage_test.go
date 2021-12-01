@@ -1,6 +1,8 @@
 package vonage_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/tenkoh/vonage-go-sdk"
@@ -36,4 +38,32 @@ func TestNewVonageClient(t *testing.T) {
 		t.Errorf("want %s, got %s", apiSecret, got)
 	}
 
+}
+
+func TestMakeRequest(t *testing.T) {
+	client, err := vonage.NewClient()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	req, err := client.MakeAuthRequest("GET", "foo", "bar", strings.NewReader("test"))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	header := req.Header
+	uas, ok := header["User-Agent"]
+	if !ok {
+		t.Error("no user-agent in request header")
+		return
+	}
+	if len(uas) != 1 {
+		t.Error("not expected user-agent in request header")
+		return
+	}
+	ua := uas[0]
+	if want := client.GetUserAgent(); ua != want {
+		t.Errorf("want %s, got %s", want, ua)
+	}
+	fmt.Printf("%+v\n", req)
 }

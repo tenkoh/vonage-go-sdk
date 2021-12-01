@@ -7,6 +7,9 @@ const (
 type VerifyClient struct {
 }
 
+type VerifyRequest struct {
+}
+
 type VerifyResponse struct {
 }
 

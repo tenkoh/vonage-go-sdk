@@ -5,15 +5,16 @@
     - 他にも読み込み自体は可能なようなデザインパターンにすること ok
     - python版実装のように初期値が与えられなかったら環境変数からの読み込みをトライする ok
     - 必要な認証情報が揃っているかvalidateする ok
-  - httpWrapperを内部に持つ
-    - authCollectionを内部に持つ
-    - httpConfigを内部に持つ
-    - httpClientを内部に持つ
+  - リクエストに必要なメソッドを持つ
+    - method, uri, bodyは他の呼び出しから受け取る ok
+    - apiKey, apiSecretでBasicAuthする
+    - ヘッダにユーザエージェント情報を加える ok
+    - ヘッダにリクエスト形式を記載する（application/jsonだけ？）ok
 - verifyClientの実装
   - verifyで確認コードを送信できる
     - サーバに適切なリクエストを送ることができる
-      - URI
-      - ヘッダ
-      - ボディ
+      -  VerifyRequest特有
+        - リクエストボディとしてnumberとbrandを入力する
     - レスポンスを確認することができる
+      - request_idとstatusがjsonで返ってくる
   - checkでユーザの入力を確認する
