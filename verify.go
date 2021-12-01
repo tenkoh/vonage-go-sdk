@@ -11,8 +11,9 @@ const (
 )
 
 var verifyEndpoints = map[string]string{
-	"verify": "/verify/json",
-	"check":  "/verify/check/json",
+	"verify":  "/verify/json",
+	"check":   "/verify/check/json",
+	"control": "/verify/control/json",
 }
 
 type VerifyClient struct {
@@ -27,6 +28,11 @@ type VerifyRequest struct {
 type VerifyCheckRequest struct {
 	RequestID string `json:"request_id"`
 	Code      string `json:"code"`
+}
+
+type VerifyControlRequest struct {
+	RequestID string `json:"request_id"`
+	Cmd       string `json:"cmd"`
 }
 
 type VerifyResponse struct {
@@ -75,6 +81,32 @@ func (vc *VerifyClient) Check(options ...VerifyCheckOption) (*VerifyResponse, er
 		return nil, ErrInvalidVerifyParameters
 	}
 	req, err := client.MakeAuthRequest("POST", client.apiHost, verifyEndpoints["check"], vreq)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var vres VerifyResponse
+	if err := json.NewDecoder(resp.Body).Decode(&vres); err != nil {
+		return nil, err
+	}
+	return &vres, nil
+}
+
+func (vc *VerifyClient) Cancel(id string) (*VerifyResponse, error) {
+	if id == "" {
+		return nil, ErrInvalidVerifyRequestID
+	}
+	client := vc.client
+	vreq := new(VerifyControlRequest)
+	vreq.RequestID = id
+	vreq.Cmd = "cancel"
+
+	req, err := client.MakeAuthRequest("POST", client.apiHost, verifyEndpoints["control"], vreq)
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,12 @@
 package vonage_test
 
+import (
+	"fmt"
+	"testing"
+
+	"github.com/tenkoh/vonage-go-sdk"
+)
+
 // Note This test sends SMS, then wastes vonage credit.
 // Invalidate here, if you are concerned about cost.
 
@@ -30,3 +37,10 @@ package vonage_test
 // 		t.Error("bad response status")
 // 	}
 // }
+
+func Test_Cancel(t *testing.T) {
+	client, _ := vonage.NewClient()
+	id := ""
+	resp, _ := client.GenerateVerifyClient().Cancel(id)
+	fmt.Println(resp)
+}

@@ -53,19 +53,31 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("%+v\n", resp)
+	reqID := resp.GetRequestID()
 
 	// check verify coce
-	fmt.Println("enter code")
+	fmt.Println("enter code. hit 'n' to cancel the process.")
 	sc := bufio.NewScanner(os.Stdin)
 	sc.Scan()
 	code := sc.Text()
 
+	if code == "n" {
+		log.Println("start cancel process")
+		resp, err := verify.Cancel(reqID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("%+v\n", resp)
+		return
+	}
+
+	log.Println("start check process")
 	resp, err = verify.Check(
 		vonage.VerifyCheckCode(code),
-		vonage.VerifyCheckRequestID(resp.GetRequestID()),
+		vonage.VerifyCheckRequestID(reqID),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", resp)
+	log.Printf("%+v\n", resp)
 }
