@@ -1,0 +1,9 @@
+- vonageClientの実装
+  - 各種Clientをgenerateできる
+  - httpWrapperを内部に持つ
+    - authCollectionを内部に持つ
+    - httpConfigを内部に持つ
+    - httpClientを内部に持つ
+- verifyClientの実装
+  - verifyで確認コードを送信できる
+  - checkでユーザの入力を確認する
