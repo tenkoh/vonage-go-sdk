@@ -17,14 +17,14 @@ It's recommended to use `go modules`. Import this package on your project, then 
 import "github.com/tenkoh/vonage-go-sdk"
 
 func main(){
-    client, _ := vonage.NewClient(
-        vonage.ApiKey("YOUR_API_KEY"),
-        vonage.ApiSecret("YOUR_API_SECRET"),
-    )
-    resp, _ := client.GenerateVerifyClient().Verify(
-		vonage.VerifyNumber("PHONE_NUMBER"),
-		vonage.VerifyBrand("YOUR_BRAND_NAME"),
-	)
+  client, _ := vonage.NewClient(
+    vonage.ApiKey("YOUR_API_KEY"),
+    vonage.ApiSecret("YOUR_API_SECRET"),
+  )
+  resp, _ := client.GenerateVerifyClient().Verify(
+    vonage.VerifyNumber("PHONE_NUMBER"),
+    vonage.VerifyBrand("YOUR_BRAND_NAME"),
+  )
 }
 ```
 
@@ -33,6 +33,4 @@ You can omit `vonage.ApiKey` and `vonage.ApiSecret` if you have exported them as
 ## License
 MIT
 
-note: the other vonage sdks are published under BSD-3 license.
-
-Note: This package references official sdk implemented by Python3. The official sdk is published under Apache license.
+Note: This package references official sdk implemented by Python3 and Java. The official sdk is published under Apache license.
