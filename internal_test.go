@@ -1,6 +1,10 @@
 package vonage
 
-import "testing"
+import (
+	"fmt"
+	"io"
+	"testing"
+)
 
 func Test_ValidateAuthParameters(t *testing.T) {
 	type args struct {
@@ -25,4 +29,15 @@ func Test_ValidateAuthParameters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_AuthBody(t *testing.T) {
+	client, _ := NewClient()
+	vr := new(VerifyRequest)
+	vr.Number = "foo"
+	vr.Brand = "bar"
+	authed := client.authBody(vr)
+	b, _ := io.ReadAll(authed)
+	s := string(b)
+	fmt.Println(s)
 }

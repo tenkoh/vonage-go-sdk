@@ -1,7 +1,6 @@
 package vonage
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"os"
@@ -22,10 +21,8 @@ type VerifyClient struct {
 }
 
 type VerifyRequest struct {
-	ApiKey    string `json:"api_key"`
-	ApiSecret string `json:"api_secret"`
-	Number    string `json:"number,omitempty"`
-	Brand     string `json:"brand,omitempty"`
+	Number string `json:"number"`
+	Brand  string `json:"brand"`
 }
 
 type VerifyResponse struct {
@@ -45,19 +42,11 @@ func (vc *VerifyClient) Verify(options ...VerifyOption) (*VerifyResponse, error)
 	if vreq.Number == "" || vreq.Brand == "" {
 		return nil, ErrInvalidVerifyParameters
 	}
-	// temp
-	vreq.ApiKey = client.apiKey
-	vreq.ApiSecret = client.apiSecret
-
-	b, err := json.Marshal(vreq)
-	if err != nil {
-		return nil, err
-	}
 	req, err := client.MakeAuthRequest(
 		"POST",
 		client.apiHost,
 		verifyEndpoints["verify"],
-		bytes.NewBuffer(b),
+		vreq,
 	)
 	if err != nil {
 		return nil, err

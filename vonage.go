@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"runtime"
 )
 
 const (
-	SDK_VERSION     = "0.1.0"
+	SDK_VERSION     = "0.0.1"
 	API_HOST        = "https://api.nexmo.com"
 	DEFAULT_TIMEOUT = 30
 )
@@ -22,6 +20,11 @@ type VonageClient struct {
 	userAgent string
 	apiHost   string
 	client    *http.Client
+}
+
+type VonageRequest struct {
+	ApiKey    string `json:"api_key"`
+	ApiSecret string `json:"api_secret"`
 }
 
 type Option func(*VonageClient)
@@ -56,12 +59,18 @@ func (vc *VonageClient) GenerateVerifyClient() *VerifyClient {
 	return verify
 }
 
-func (vc *VonageClient) MakeAuthRequest(method, host, endpoint string, body io.Reader) (*http.Request, error) {
+func (vc *VonageClient) authBody(body interface{}) io.Reader {
+	auth := &VonageRequest{vc.apiKey, vc.apiSecret}
+	merged := mergeStructsAsJson(auth, body)
+	return merged
+}
+
+func (vc *VonageClient) MakeAuthRequest(method, host, endpoint string, body interface{}) (*http.Request, error) {
 	uri, err := uriJoin(host, endpoint)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(method, uri, body)
+	req, err := http.NewRequest(method, uri, vc.authBody(body))
 	if err != nil {
 		return nil, err
 	}
@@ -130,15 +139,4 @@ func validateAuthParameters(key, secret string) error {
 		return ErrInvalidAuthParameters
 	}
 	return nil
-}
-
-// util function to join url.
-// Without this function, scheme(ex. https) would lack or unexpected slash would appear.
-func uriJoin(parent, child string) (string, error) {
-	u, err := url.Parse(parent)
-	if err != nil {
-		return "", err
-	}
-	u.Path = path.Join(u.Path, child)
-	return fmt.Sprint(u), nil
 }
