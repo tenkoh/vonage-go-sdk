@@ -1,37 +1,16 @@
-package vonage
+package vonage_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
-	"github.com/joho/godotenv"
+	"github.com/tenkoh/vonage-go-sdk"
 )
-
-var (
-	apiKey          string
-	apiSecret       string
-	recipientNumber string
-	brandName       string
-)
-
-func TestMain(m *testing.M) {
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-	apiKey = os.Getenv("API_KEY")
-	apiSecret = os.Getenv("API_SECRET")
-	recipientNumber = os.Getenv("RECIPIENT_NUMBER")
-	brandName = os.Getenv("BRAND_NUMBER")
-
-	m.Run()
-}
 
 func TestVerify_Verify(t *testing.T) {
-	client, err := NewClient(
-		ApiKey(apiKey),
-		ApiSecret(apiSecret),
+	client, err := vonage.NewClient(
+		vonage.ApiKey(apiKey),
+		vonage.ApiSecret(apiSecret),
 	)
 	if err != nil {
 		t.Error(err)
@@ -43,7 +22,7 @@ func TestVerify_Verify(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if resp.GetStatus() != VerifyStatusOK {
+	if resp.GetStatus() != vonage.VerifyStatusOK {
 		t.Error("bad response status")
 	}
 	fmt.Printf("request id: %s\n", resp.GetRequestID())

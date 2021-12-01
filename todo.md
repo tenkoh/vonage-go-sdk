@@ -1,9 +1,18 @@
 - vonageClientの実装
-  - 各種Clientをgenerateできる
+  - verifyClientをgenerateできる
+  - コンストラクタを持つ
+    - apiKeyとapiSecretを引数に持つ
+    - 他にも読み込み自体は可能なようなデザインパターンにすること
+    - python版実装のように初期値が与えられなかったら環境変数からの読み込みをトライする
+    - 必要な認証情報が揃っているかvalidateする
   - httpWrapperを内部に持つ
     - authCollectionを内部に持つ
     - httpConfigを内部に持つ
     - httpClientを内部に持つ
 - verifyClientの実装
   - verifyで確認コードを送信できる
+    - サーバに適切なリクエストを送ることができる
+      - ヘッダ
+      - ボディ
+    - レスポンスを確認することができる
   - checkでユーザの入力を確認する
