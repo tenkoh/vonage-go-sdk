@@ -3,7 +3,7 @@ package vonage_test
 // Note This test sends SMS, then wastes vonage credit.
 // Invalidate here, if you are concerned about cost.
 
-// func TestVerify_Verify(t *testing.T) {
+// func TestVerify_VerifyAndCheck(t *testing.T) {
 // 	client, err := vonage.NewClient(
 // 		vonage.ApiKey(apiKey),
 // 		vonage.ApiSecret(apiSecret),
@@ -29,5 +29,4 @@ package vonage_test
 // 	if status != vonage.VerifyStatusOK {
 // 		t.Error("bad response status")
 // 	}
-// 	fmt.Printf("request id: %s\n", resp.GetRequestID())
 // }

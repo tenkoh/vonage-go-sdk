@@ -2,8 +2,6 @@ package vonage
 
 import (
 	"encoding/json"
-	"io"
-	"os"
 	"strconv"
 )
 
@@ -14,6 +12,7 @@ const (
 
 var verifyEndpoints = map[string]string{
 	"verify": "/verify/json",
+	"check":  "/verify/check/json",
 }
 
 type VerifyClient struct {
@@ -25,12 +24,18 @@ type VerifyRequest struct {
 	Brand  string `json:"brand"`
 }
 
+type VerifyCheckRequest struct {
+	RequestID string `json:"request_id"`
+	Code      string `json:"code"`
+}
+
 type VerifyResponse struct {
 	RequestID string `json:"request_id"`
 	Status    string `json:"status"`
 }
 
 type VerifyOption func(*VerifyRequest)
+type VerifyCheckOption func(*VerifyCheckRequest)
 
 func (vc *VerifyClient) Verify(options ...VerifyOption) (*VerifyResponse, error) {
 	client := vc.client
@@ -42,12 +47,7 @@ func (vc *VerifyClient) Verify(options ...VerifyOption) (*VerifyResponse, error)
 	if vreq.Number == "" || vreq.Brand == "" {
 		return nil, ErrInvalidVerifyParameters
 	}
-	req, err := client.MakeAuthRequest(
-		"POST",
-		client.apiHost,
-		verifyEndpoints["verify"],
-		vreq,
-	)
+	req, err := client.MakeAuthRequest("POST", client.apiHost, verifyEndpoints["verify"], vreq)
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +57,35 @@ func (vc *VerifyClient) Verify(options ...VerifyOption) (*VerifyResponse, error)
 	}
 	defer resp.Body.Close()
 
-	// using TeeReader for debug. Reference: https://mattn.kaoriya.net/software/lang/go/20171026101727.htm
-	var r io.Reader = resp.Body
-	r = io.TeeReader(r, os.Stderr)
+	var vres VerifyResponse
+	if err := json.NewDecoder(resp.Body).Decode(&vres); err != nil {
+		return nil, err
+	}
+	return &vres, nil
+}
+
+func (vc *VerifyClient) Check(options ...VerifyCheckOption) (*VerifyResponse, error) {
+	client := vc.client
+	vreq := new(VerifyCheckRequest)
+	for _, option := range options {
+		option(vreq)
+	}
+	// validate. Add methods when options are added.
+	if vreq.RequestID == "" || vreq.Code == "" {
+		return nil, ErrInvalidVerifyParameters
+	}
+	req, err := client.MakeAuthRequest("POST", client.apiHost, verifyEndpoints["check"], vreq)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
 	var vres VerifyResponse
-	if err := json.NewDecoder(r).Decode(&vres); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&vres); err != nil {
 		return nil, err
 	}
 	return &vres, nil
@@ -77,6 +100,18 @@ func VerifyNumber(number string) VerifyOption {
 func VerifyBrand(brand string) VerifyOption {
 	return func(vr *VerifyRequest) {
 		vr.Brand = brand
+	}
+}
+
+func VerifyCheckRequestID(id string) VerifyCheckOption {
+	return func(vcr *VerifyCheckRequest) {
+		vcr.RequestID = id
+	}
+}
+
+func VerifyCheckCode(code string) VerifyCheckOption {
+	return func(vcr *VerifyCheckRequest) {
+		vcr.Code = code
 	}
 }
 
