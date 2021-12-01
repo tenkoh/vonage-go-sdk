@@ -7,7 +7,7 @@
     - 必要な認証情報が揃っているかvalidateする ok
   - リクエストに必要なメソッドを持つ
     - method, uri, bodyは他の呼び出しから受け取る ok
-    - apiKey, apiSecretでBasicAuthする
+    - apiKey, apiSecretでBasicAuthする ok
     - ヘッダにユーザエージェント情報を加える ok
     - ヘッダにリクエスト形式を記載する（application/jsonだけ？）ok
 - verifyClientの実装

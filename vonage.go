@@ -4,23 +4,24 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"runtime"
 )
 
 const (
-	SDK_VERSION       = "0.1.0"
-	AUTH_EXP_DURATION = 60
-	HOST              = "rest.nexmo.com"
-	API_HOST          = "api.nexmo.com"
-	HOST_PATTERN      = `^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$`
+	SDK_VERSION     = "0.1.0"
+	API_HOST        = "https://api.nexmo.com"
+	DEFAULT_TIMEOUT = 30
 )
 
 type VonageClient struct {
 	apiKey    string
 	apiSecret string
 	userAgent string
+	apiHost   string
+	client    *http.Client
 }
 
 type Option func(*VonageClient)
@@ -35,24 +36,32 @@ func NewClient(options ...Option) (*VonageClient, error) {
 		option(client)
 	}
 	if client.apiKey == "" {
-		client.SetEnvApiKey()
+		client.setEnvApiKey()
 	}
 	if client.apiSecret == "" {
-		client.SetEnvApiSecret()
+		client.setEnvApiSecret()
 	}
 	if err := validateAuthParameters(client.apiKey, client.apiSecret); err != nil {
 		return nil, fmt.Errorf("fail to create a new client; %w", err)
 	}
-	client.SetUserAgent()
+	client.setUserAgent()
+	client.apiHost = API_HOST
+	client.client = new(http.Client)
 	return client, nil
 }
 
 func (vc *VonageClient) GenerateVerifyClient() *VerifyClient {
-	return nil
+	verify := new(VerifyClient)
+	verify.client = vc
+	return verify
 }
 
 func (vc *VonageClient) MakeAuthRequest(method, host, endpoint string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, path.Join(host, endpoint), body)
+	uri, err := uriJoin(host, endpoint)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(method, uri, body)
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +75,11 @@ func (vc *VonageClient) GetApiKey() string {
 	return vc.apiKey
 }
 
-func (vc *VonageClient) SetApiKey(key string) {
+func (vc *VonageClient) setApiKey(key string) {
 	vc.apiKey = key
 }
 
-func (vc *VonageClient) SetEnvApiKey() {
+func (vc *VonageClient) setEnvApiKey() {
 	key := os.Getenv("VONAGE_API_KEY")
 	if key == "" {
 		return
@@ -82,11 +91,11 @@ func (vc *VonageClient) GetApiSecret() string {
 	return vc.apiSecret
 }
 
-func (vc *VonageClient) SetApiSecret(secret string) {
+func (vc *VonageClient) setApiSecret(secret string) {
 	vc.apiSecret = secret
 }
 
-func (vc *VonageClient) SetEnvApiSecret() {
+func (vc *VonageClient) setEnvApiSecret() {
 	secret := os.Getenv("VONAGE_API_SECRET")
 	if secret == "" {
 		return
@@ -94,7 +103,7 @@ func (vc *VonageClient) SetEnvApiSecret() {
 	vc.apiSecret = secret
 }
 
-func (vc *VonageClient) SetUserAgent() {
+func (vc *VonageClient) setUserAgent() {
 	ua := fmt.Sprintf("vonage-go/%s go/%s", SDK_VERSION, runtime.Version())
 	vc.userAgent = ua
 }
@@ -106,13 +115,13 @@ func (vc *VonageClient) GetUserAgent() string {
 // Constructor methods
 func ApiKey(key string) Option {
 	return func(vc *VonageClient) {
-		vc.SetApiKey(key)
+		vc.setApiKey(key)
 	}
 }
 
 func ApiSecret(secret string) Option {
 	return func(vc *VonageClient) {
-		vc.SetApiSecret(secret)
+		vc.setApiSecret(secret)
 	}
 }
 
@@ -121,4 +130,15 @@ func validateAuthParameters(key, secret string) error {
 		return ErrInvalidAuthParameters
 	}
 	return nil
+}
+
+// util function to join url.
+// Without this function, scheme(ex. https) would lack or unexpected slash would appear.
+func uriJoin(parent, child string) (string, error) {
+	u, err := url.Parse(parent)
+	if err != nil {
+		return "", err
+	}
+	u.Path = path.Join(u.Path, child)
+	return fmt.Sprint(u), nil
 }
