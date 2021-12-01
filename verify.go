@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strconv"
 )
 
 const (
@@ -29,7 +30,7 @@ type VerifyRequest struct {
 
 type VerifyResponse struct {
 	RequestID string `json:"request_id"`
-	Status    int    `json:"status"`
+	Status    string `json:"status"`
 }
 
 type VerifyOption func(*VerifyRequest)
@@ -90,8 +91,12 @@ func VerifyBrand(brand string) VerifyOption {
 	}
 }
 
-func (vr *VerifyResponse) GetStatus() int {
-	return vr.Status
+func (vr *VerifyResponse) GetStatus() (int, error) {
+	i, err := strconv.Atoi(vr.Status)
+	if err != nil {
+		return -1, err
+	}
+	return i, nil
 }
 
 func (vr *VerifyResponse) GetRequestID() string {

@@ -27,7 +27,12 @@ func TestVerify_Verify(t *testing.T) {
 		return
 	}
 	log.Printf("%+v\n", resp)
-	if resp.GetStatus() != vonage.VerifyStatusOK {
+	status, err := resp.GetStatus()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if status != vonage.VerifyStatusOK {
 		t.Error("bad response status")
 	}
 	fmt.Printf("request id: %s\n", resp.GetRequestID())
