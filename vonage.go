@@ -224,8 +224,7 @@ func (c *Client) Auth(auth map[string]interface{}) {
 
 // [FIXME] this implementation is ambiguous
 func (c *Client) generateApplicationJwt() (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256)
-	claims := token.Claims.(jwt.MapClaims)
+	claims := jwt.MapClaims{}
 	claims["application_id"] = c.applicationID
 	claims["iat"] = int(time.Now().Unix())
 	claims["exp"] = int(time.Now().Unix() + AUTH_EXP_DURATION)
@@ -233,6 +232,8 @@ func (c *Client) generateApplicationJwt() (string, error) {
 		u := new(uuid.UUID)
 		return u.String()
 	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	// overwrite claim with user's configuration
 	for k, v := range c.auth {
 		claims[k] = v
 	}
